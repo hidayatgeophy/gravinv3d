@@ -409,7 +409,7 @@ if st.session_state.inversion_done:
         
         ax_seis = fig_seis.add_subplot(gs_seis[0])
         vm = np.max(np.abs(seismic)) * 0.3 
-        c_seis = ax_seis.pcolormesh(jarak_x, z_centers_seis, seismic.T, cmap='RdBu_r', vmin=-vm, vmax=vm, shading='nearest')
+        c_seis = ax_seis.pcolormesh(jarak_x, z_centers_seis, seismic.T, cmap='Greys', vmin=-vm, vmax=vm, shading='nearest')
         ax_seis.invert_yaxis()
         ax_seis.set_title("Predicted Seismic Section", fontweight='bold')
         ax_seis.set_ylabel("Depth (m)")
