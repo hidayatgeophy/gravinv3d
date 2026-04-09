@@ -365,7 +365,7 @@ if st.session_state.inversion_done:
     # ==========================================
     st.markdown("---")
     st.header("Step 4: Predicted Seismic Section (Synthetic Seismogram)")
-    st.write("Modul ini mengonversi penampang densitas menjadi penampang seismik sintetik ala GeoModeller menggunakan Persamaan Gardner dan Ricker Wavelet.")
+    st.write("Modul ini mengonversi penampang densitas menjadi penampang seismik sintetik menggunakan Persamaan Gardner dan Ricker Wavelet.")
     
     col_s1, col_s2 = st.columns([1, 3])
     
@@ -429,7 +429,7 @@ if st.session_state.inversion_done:
     # ==========================================
     st.markdown("---")
     st.header("Step 5: Export to SEG-Y")
-    st.write("Simpan penampang seismik sintetik ke dalam format standar industri SEG-Y untuk diintegrasikan ke Petrel, OpendTect, atau GeoModeller.")
+    st.write("Simpan penampang seismik sintetik ke dalam format standar industri SEG-Y untuk diintegrasikan ke Software Komersil lainnya.")
     
     export_col1, export_col2 = st.columns([1, 2])
     
