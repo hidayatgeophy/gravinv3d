@@ -8,6 +8,7 @@ from scipy.signal import fftconvolve
 import plotly.graph_objects as go
 from scipy.signal import fftconvolve
 from scipy.ndimage import gaussian_filter
+from scipy.interpolate import RegularGridInterpolator
 
 # ==========================================
 # MODUL 1: GRIDDING, KERNEL & WEIGHTING
@@ -183,7 +184,7 @@ st.sidebar.header("2. Inversion Parameters")
 beta_weight = st.sidebar.slider("Depth Weighting (Beta)", 0.0, 3.0, 1.5, 0.1)
 
 # --- TAMBAHAN KONTROL GEOLOGI ---
-smooth_sigma = st.sidebar.slider("Horizontal Smoothness", 0.0, 5.0, 2.0, 0.5, help="Memaksa anomali menyambung mulus secara lateral (menghapus tiang zebra).")
+smooth_sigma = st.sidebar.slider("Horizontal Smoothness", 0.0, 5.0, 2.0, 0.1, help="Memaksa anomali menyambung mulus secara lateral (menghapus tiang zebra).")
 max_dev = st.sidebar.slider("Max Density Deviation (+/- g/cc)", 0.05, 0.50, 0.20, 0.05, help="Batas maksimal algoritma boleh mengubah densitas awal.")
 max_iter = st.sidebar.number_input("Max Iterasi", value=15)
 
@@ -224,23 +225,33 @@ if uploaded_file is not None:
             Density_3D, g_calc = gravity_inversion_3d(
                 XI, YI, g_grid, dx, dy, z_bounds, nx, ny, nz, rho_1d_model, beta_weight, max_iter, smooth_sigma, max_dev
             )
-            st.session_state.XI, st.session_state.YI = XI, YI
-            st.session_state.z_bounds, st.session_state.Density_3D = z_bounds, Density_3D
-            st.session_state.g_obs, st.session_state.g_calc = g_grid, g_calc
-            st.session_state.inversion_done = True
+            
+            # --- PERBAIKAN 1: SIMPAN SEMUA VARIABEL PENTING KE BRANKAS ---
+            st.session_state['Density_3D'] = Density_3D
+            st.session_state['XI'] = XI
+            st.session_state['YI'] = YI
+            st.session_state['z_bounds'] = z_bounds
+            st.session_state['g_obs'] = g_grid  # Disimpan agar bisa diplot di QC
+            st.session_state['g_calc'] = g_calc
+            st.session_state.inversion_done = True # Buka kunci pintu untuk Step 3-6
+            # -------------------------------------------------------------
 
 # ==========================================
-# VISUALISASI QC (Post-Inversion)
+# VISUALISASI QC & SEMUA MODUL EXPORT
 # ==========================================
+# --- PERBAIKAN 2: BUNGKUS SEMUA MODUL KE DALAM SATU RUMAH UTAMA ---
 if st.session_state.inversion_done:
     st.markdown("---")
     st.header("Step 3: Quality Control & Analysis")
     
+    # Tarik semua data dari brankas memori ke dunia nyata
     XI, YI, z_bounds = st.session_state.XI, st.session_state.YI, st.session_state.z_bounds
     Density_3D = st.session_state.Density_3D
     g_obs, g_calc = st.session_state.g_obs, st.session_state.g_calc
     
     ny_shape, nx_shape = g_obs.shape
+    x_min, x_max = float(XI.min()), float(XI.max())
+    y_min, y_max = float(YI.min()), float(YI.max())
     
     st.markdown("**Colorbar Settings:**")
     col_v1, col_v2, _ = st.columns([1, 1, 2])
@@ -249,43 +260,81 @@ if st.session_state.inversion_done:
     
     col1, col2 = st.columns([1, 3])
     with col1:
-        profil_pilihan = st.radio("Orientasi Slicing:", ("Profil XZ (B-T)", "Profil YZ (S-U)"))
+        # --- PERBAIKAN: TAMBAHAN OPSI ARBITRARY ---
+        profil_pilihan = st.radio("Orientasi Slicing:", ("Profil XZ (B-T)", "Profil YZ (S-U)", "Arbitrary (Garis Bebas)"))
+        
         if profil_pilihan == "Profil XZ (B-T)":
             idx = st.slider("Geser Indeks Y:", 0, ny_shape - 1, ny_shape // 2)
             jarak_x, o_curve, c_curve, slice_den = XI[idx, :], g_obs[idx, :], g_calc[idx, :], Density_3D[idx, :, :]
             xlabel, title = "Jarak X (m)", f"Profil XZ di Y={YI[idx, 0]:.1f}"
-        else:
+            
+        elif profil_pilihan == "Profil YZ (S-U)":
             idx = st.slider("Geser Indeks X:", 0, nx_shape - 1, nx_shape // 2)
             jarak_x, o_curve, c_curve, slice_den = YI[:, idx], g_obs[:, idx], g_calc[:, idx], Density_3D[:, idx, :]
             xlabel, title = "Jarak Y (m)", f"Profil YZ di X={XI[0, idx]:.1f}"
             
-        # --- TAMBAHAN BARU: INSET MAP (PETA LINTASAN) ---
+        else:
+            # --- MODUL POTONG ARBITRARY ---
+            st.markdown("**Koordinat Garis Sayatan:**")
+            c_a1, c_a2 = st.columns(2)
+            with c_a1: xa = st.slider("X Awal (A)", min_value=x_min, max_value=x_max, value=x_min, format="%.0f")
+            with c_a2: ya = st.slider("Y Awal (A)", min_value=y_min, max_value=y_max, value=y_min, format="%.0f")
+            
+            c_b1, c_b2 = st.columns(2)
+            with c_b1: xb = st.slider("X Akhir (B)", min_value=x_min, max_value=x_max, value=x_max, format="%.0f")
+            with c_b2: yb = st.slider("Y Akhir (B)", min_value=y_min, max_value=y_max, value=y_max, format="%.0f")
+            
+            # Buat titik-titik sepanjang garis A-B
+            num_points = 100
+            line_x = np.linspace(xa, xb, num_points)
+            line_y = np.linspace(ya, yb, num_points)
+            jarak_x = np.sqrt((line_x - xa)**2 + (line_y - ya)**2)
+            
+            # Mesin Interpolasi 2D untuk kurva Calculated dan Observed
+            x_1d, y_1d = XI[0, :], YI[:, 0]
+            interp_obs = RegularGridInterpolator((y_1d, x_1d), g_obs, bounds_error=False, fill_value=np.nan)
+            interp_calc = RegularGridInterpolator((y_1d, x_1d), g_calc, bounds_error=False, fill_value=np.nan)
+            points_2d = np.array([line_y, line_x]).T
+            o_curve = interp_obs(points_2d)
+            c_curve = interp_calc(points_2d)
+            
+            # Mesin Interpolasi 3D untuk mengiris Kubus Densitas
+            z_centers = (z_bounds[:-1] + z_bounds[1:]) / 2
+            interp_3d = RegularGridInterpolator((y_1d, x_1d, z_centers), Density_3D, bounds_error=False, fill_value=np.nan)
+            
+            slice_den = np.zeros((num_points, len(z_centers)))
+            for i in range(len(z_centers)):
+                points_3d = np.array([line_y, line_x, np.full(num_points, z_centers[i])]).T
+                slice_den[:, i] = interp_3d(points_3d)
+                
+            xlabel, title = "Jarak dari Titik A (m)", "Sayatan Arbitrary (A-B)"
+
+        # --- UPDATE PETA INSET ---
         st.markdown("<br>**📍 Posisi Lintasan Slicing:**", unsafe_allow_html=True)
         fig_inset, ax_inset = plt.subplots(figsize=(4, 4))
-        
-        # Plot Peta Anomali 2D sebagai Background (dibuat agak transparan)
         ax_inset.contourf(XI, YI, g_obs, levels=30, cmap='jet', alpha=0.5)
         
-        # Gambar Garis Lintasan (Warna Merah Tegas)
         if profil_pilihan == "Profil XZ (B-T)":
             y_line = YI[idx, 0]
             ax_inset.axhline(y=y_line, color='red', linewidth=3, linestyle='--')
-            # Tambahkan label A dan B di ujung garis
             ax_inset.text(XI.min(), y_line, ' A', color='red', weight='bold', va='bottom')
             ax_inset.text(XI.max(), y_line, 'B ', color='red', weight='bold', va='bottom', ha='right')
-        else:
+        elif profil_pilihan == "Profil YZ (S-U)":
             x_line = XI[0, idx]
             ax_inset.axvline(x=x_line, color='red', linewidth=3, linestyle='--')
             ax_inset.text(x_line, YI.min(), ' A', color='red', weight='bold', ha='left')
             ax_inset.text(x_line, YI.max(), 'B ', color='red', weight='bold', ha='left', va='top')
+        else:
+            # Peta Inset untuk Arbitrary
+            ax_inset.plot([xa, xb], [ya, yb], color='red', linewidth=3, linestyle='--')
+            ax_inset.plot(xa, ya, 'ro') # Titik A
+            ax_inset.plot(xb, yb, 'ro') # Titik B
+            ax_inset.text(xa, ya, ' A', color='red', weight='bold', va='bottom')
+            ax_inset.text(xb, yb, ' B', color='red', weight='bold', va='bottom')
 
-        # Sembunyikan angka sumbu agar rapi dan fokus ke posisi
-        ax_inset.set_xticks([]) 
-        ax_inset.set_yticks([])
+        ax_inset.set_xticks([]); ax_inset.set_yticks([])
         ax_inset.set_title("Top-Down View", fontsize=10)
-        
         st.pyplot(fig_inset)
-        # ------------------------------------------------
 
     with col2:
         fig = plt.figure(figsize=(10, 6))
@@ -300,88 +349,58 @@ if st.session_state.inversion_done:
         z_centers = (z_bounds[:-1] + z_bounds[1:]) / 2
         levels = np.linspace(vmin_plot, vmax_plot, 100)
         
-        # --- TAMBAHAN VISUAL SMOOTHING ---
-        from scipy.ndimage import gaussian_filter
-        # Menghaluskan matriks 2D khusus untuk tampilan gambar
         slice_den_visual = gaussian_filter(slice_den, sigma=1.0) 
-        
-        # Plot menggunakan matriks yang sudah dihaluskan
         c = ax1.contourf(jarak_x, z_centers, slice_den_visual.T, levels=levels, cmap='jet', extend='both')
-        # ---------------------------------
-        
         ax1.invert_yaxis()
         ax1.set_xlabel(xlabel); ax1.set_ylabel("Depth (m)")
         plt.colorbar(c, ax=ax1, orientation='horizontal', pad=0.15, label='Density (g/cc)')
         st.pyplot(fig)
 
     # ==========================================
-    # MODUL 4: EXPORT TO TXT (XYZ-Density)
+    # MODUL 4: EXPORT TO TXT (FULL 3D CUBE)
     # ==========================================
     st.markdown("---")
-    st.header("Step 4: Export 3D Model")
-    st.write("Simpan hasil inversi matriks 3D ke dalam format TXT (X, Y, Z, Density) untuk diintegrasikan ke *software* eksternal (Petrel, Oasis Montaj, Voxler, dll).")
+    st.header("Step 4: Export Full 3D Cube Model")
+    st.write("Simpan seluruh volume matriks 3D (Point Cloud) ke format TXT untuk software eksternal.")
+
+    ny_s, nx_s, nz_s = Density_3D.shape
+    x_3d = np.repeat(XI[:, :, np.newaxis], nz_s, axis=2)
+    y_3d = np.repeat(YI[:, :, np.newaxis], nz_s, axis=2)
+    z_1d = -1.0 * z_centers
+    z_3d = np.tile(z_1d, (ny_s, nx_s, 1))
     
-    export_col1, export_col2 = st.columns([1, 2])
+    df_export = pd.DataFrame({
+        'X': x_3d.flatten(), 'Y': y_3d.flatten(), 'Depth': z_3d.flatten(), 'Density': Density_3D.flatten()
+    })
+    txt_data = df_export.to_csv(index=False, sep='\t')
+    st.success(f"✅ Matriks 3D Cube berhasil dirangkum! Total titik: **{len(df_export):,} titik**.")
     
-    with export_col1:
-        # Gunakan form ringan agar tidak auto-refresh sebelum siap
-        if st.button("⚙️ Ekstrak Matriks ke TXT", use_container_width=True):
-            with st.spinner("Memformat matriks 3D menjadi Point Cloud..."):
-                ny_shape, nx_shape, nz_shape = Density_3D.shape
-                z_centers = (z_bounds[:-1] + z_bounds[1:]) / 2
-                
-                # 1. Mereplikasi koordinat X dan Y agar memiliki ketebalan Z
-                XI_3D = np.repeat(XI[:, :, np.newaxis], nz_shape, axis=2)
-                YI_3D = np.repeat(YI[:, :, np.newaxis], nz_shape, axis=2)
-                
-                # 2. Membuat sumbu Z bernilai negatif dan mereplikasinya ke seluruh X dan Y
-                ZI_1D = -1.0 * z_centers
-                ZI_3D = np.tile(ZI_1D, (ny_shape, nx_shape, 1))
-                
-                # 3. Meratakan matriks 3D menjadi 1D kolom (Flattening)
-                export_df = pd.DataFrame({
-                    'X': XI_3D.flatten(),
-                    'Y': YI_3D.flatten(),
-                    'Depth': ZI_3D.flatten(), # Sekarang Z otomatis negatif
-                    'Density': Density_3D.flatten()
-                })
-                
-                # Mengubah DataFrame menjadi string teks yang dipisahkan oleh Tab
-                txt_data = export_df.to_csv(index=False, sep='\t')
-                
-                st.success("File siap diunduh!")
-                st.download_button(
-                    label="💾 Download File TXT",
-                    data=txt_data,
-                    file_name="Geoslicer_3D_Density_Model.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                )
-                
-    with export_col2:
-        st.info("💡 **Format File Output:** Kolom dipisahkan menggunakan *Tab* (`\\t`). Kolom Depth (Z) secara otomatis telah dikonversi menjadi nilai negatif (contoh: `-1500` meter) agar langsung terbaca sebagai elevasi bawah permukaan oleh *software* interpretasi geofisika standar industri.")
+    st.download_button(
+        label="💾 Download Full 3D Cube (.txt)",
+        data=txt_data,
+        file_name="Full_3D_Density_Cube.txt",
+        mime="text/plain",
+        width="stretch" # Perbaikan sintaks Streamlit
+    )
+
     # ==========================================
-    # MODUL 4: PREDICTED SEISMIC GENERATOR (FIXED)
+    # MODUL 5: PREDICTED SEISMIC GENERATOR
     # ==========================================
     st.markdown("---")
-    st.header("Step 4: Predicted Seismic Section (Synthetic Seismogram)")
-    st.write("Modul ini mengonversi penampang densitas menjadi penampang seismik sintetik menggunakan Persamaan Gardner dan Ricker Wavelet.")
+    st.header("Step 5: Predicted Seismic Section (Synthetic Seismogram)")
+    st.write("Mengonversi penampang densitas menjadi seismik sintetik ala GeoModeller (Gardner & Ricker Wavelet).")
     
     col_s1, col_s2 = st.columns([1, 3])
-    
     with col_s1:
         st.markdown("**Parameter Seismik**")
         freq = st.slider("Frekuensi Wavelet (Hz)", 10, 80, 30, step=5)
         st.info("💡 Penampang otomatis sinkron dengan irisan yang dipilih di Step 3.")
         
     with col_s2:
-        # AMAN 1: Pastikan dz selalu positif mutlak
         dz = abs(z_bounds[1] - z_bounds[0]) 
         nx_slice, nz_slice = slice_den.shape
         
-        # AMAN 2: Batasi nilai densitas ekstrem untuk cegah error memori Gardner
         slice_den_safe = np.clip(slice_den, 1.0, 4.0)
-        
         Vp = (slice_den_safe / 0.31)**4
         AI = slice_den_safe * Vp
         
@@ -391,8 +410,6 @@ if st.session_state.inversion_done:
             
         mean_vp = np.mean(Vp)
         wavelength = mean_vp / freq
-        
-        # AMAN 3: Batasi maksimal array panjang gelombang
         panjang_gelombang = min(wavelength, 10000.0) 
         f_spasial = 1.0 / panjang_gelombang
         
@@ -405,11 +422,10 @@ if st.session_state.inversion_done:
             
         fig_seis = plt.figure(figsize=(10, 8))
         gs_seis = GridSpec(2, 1, height_ratios=[1, 1], hspace=0.2)
-        z_centers_seis = (z_bounds[:-1] + z_bounds[1:]) / 2
         
         ax_seis = fig_seis.add_subplot(gs_seis[0])
         vm = np.max(np.abs(seismic)) * 0.3 
-        c_seis = ax_seis.pcolormesh(jarak_x, z_centers_seis, seismic.T, cmap='Greys', vmin=-vm, vmax=vm, shading='nearest')
+        c_seis = ax_seis.pcolormesh(jarak_x, z_centers, seismic.T, cmap='RdBu_r', vmin=-vm, vmax=vm, shading='nearest')
         ax_seis.invert_yaxis()
         ax_seis.set_title("Predicted Seismic Section", fontweight='bold')
         ax_seis.set_ylabel("Depth (m)")
@@ -417,22 +433,19 @@ if st.session_state.inversion_done:
         
         ax_den = fig_seis.add_subplot(gs_seis[1], sharex=ax_seis)
         levels_den = np.linspace(np.min(slice_den), np.max(slice_den), 100)
-        c_den = ax_den.contourf(jarak_x, z_centers_seis, slice_den.T, levels=levels_den, cmap='jet', extend='both')
+        c_den = ax_den.contourf(jarak_x, z_centers, slice_den.T, levels=levels_den, cmap='jet', extend='both')
         ax_den.invert_yaxis()
         ax_den.set_xlabel("Jarak (m)")
         ax_den.set_ylabel("Depth (m)")
-        
         st.pyplot(fig_seis)
 
     # ==========================================
-    # MODUL 5: EXPORT TO SEGY
+    # MODUL 6: EXPORT TO SEGY
     # ==========================================
     st.markdown("---")
-    st.header("Step 5: Export to SEG-Y")
-    st.write("Simpan penampang seismik sintetik ke dalam format standar industri SEG-Y untuk diintegrasikan ke Software Komersil lainnya.")
+    st.header("Step 6: Export to SEG-Y")
     
     export_col1, export_col2 = st.columns([1, 2])
-    
     with export_col1:
         try:
             from obspy.core import Trace, Stream
@@ -444,29 +457,39 @@ if st.session_state.inversion_done:
                 for i in range(nx_slice):
                     data_trace = np.float32(seismic[i, :])
                     tr = Trace(data=data_trace)
-                    tr.stats.delta = dz 
+                    tr.stats.delta = 0.001
                     
                     tr.stats.segy = {}
                     tr.stats.segy.trace_header = {}
                     tr.stats.segy.trace_header.trace_sequence_number_within_line = i + 1
                     tr.stats.segy.trace_header.source_coordinate_x = int(jarak_x[i])
-                    
                     seis_stream.append(tr)
                     
                 segy_buffer = io.BytesIO()
                 _write_segy(seis_stream, segy_buffer, data_encoding=5) 
                 segy_bytes = segy_buffer.getvalue()
+                
+                if profil_pilihan == "Profil XZ (B-T)":
+                    nama_file_segy = f"Predicted_Seismic_XZ_Y{int(YI[idx, 0])}.sgy"
+                elif profil_pilihan == "Profil YZ (S-U)":
+                    nama_file_segy = f"Predicted_Seismic_YZ_X{int(XI[0, idx])}.sgy"
+                else:
+                    nama_file_segy = "Predicted_Seismic_Arbitrary.sgy"
+            # ---------------------------------
             
             st.download_button(
                 label="💾 Download File SEG-Y (*.sgy)",
                 data=segy_bytes,
-                file_name=f"Geoslicer_Predicted_Seismic_Y{int(YI[idx, 0]) if profil_pilihan == 'Profil XZ (B-T)' else int(XI[0, idx])}.sgy",
+                file_name=nama_file_segy, # Panggil variabel nama file yang sudah aman
                 mime="application/octet-stream",
-                use_container_width=True
+                width="stretch" 
             )
             
         except ImportError:
             st.error("⚠️ Library 'obspy' belum terinstal. Buka terminal dan ketik: `pip install obspy`")
             
     with export_col2:
-        st.info("💡 **Catatan Teknis:** File SEG-Y yang diekspor berada dalam **Domain Kedalaman (Depth Domain)**. Saat memuat (*load*) ke *software* eksternal, pastikan Z-Axis diatur sebagai Kedalaman (Meters).")
+        st.info("💡 **Catatan Teknis:** File SEG-Y yang diekspor berada dalam **Domain Kedalaman (Depth Domain)**.")
+        
+        # Tambahan peringatan WAJIB untuk nilai Z-Step
+        st.warning(f"⚠️ **PENTING SAAT IMPORT KE PETREL / OPENDTECT:**\n\nKarena keterbatasan bawaan format SEG-Y standar, jarak antar sampel di dalam file dikunci ke nilai dummy. \n\nSaat melakukan *Load/Import* file ini ke *software* eksternal, Bapak **WAJIB** melakukan *override* Z-Step/Sample Interval menjadi **{dz:.2f} meter**.")
