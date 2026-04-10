@@ -404,7 +404,7 @@ if st.session_state.inversion_done:
     # ==========================================
     st.markdown("---")
     st.header("Step 5: Predicted Seismic Section (Synthetic Seismogram)")
-    st.write("Mengonversi penampang densitas menjadi seismik sintetik ala GeoModeller (Gardner & Ricker Wavelet).")
+    st.write("Mengonversi penampang densitas menjadi seismik sintetik (Gardner & Ricker Wavelet).")
     
     col_s1, col_s2 = st.columns([1, 3])
     with col_s1:
