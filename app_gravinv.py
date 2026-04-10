@@ -192,17 +192,16 @@ max_iter = st.sidebar.number_input("Max Iterasi", value=15)
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Statistik Aplikasi**")
 
-url_app = "https://ginvert.streamlit.app/" 
-
-# Menggunakan format HTML murni agar Streamlit dipaksa merender gambar
-badge_html = f"""
-<a href="{url_app}" target="_blank">
-    <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url={url_app}&count_bg=%231f77b4&title_bg=%23555555&title=Pengunjung&edge_flat=false" alt="Visitor Count">
+# Menggunakan provider VisitorBadge yang lebih kebal Adblocker
+# URL aplikasi kita encode (https://ginvert.streamlit.app)
+badge_html = """
+<a href="https://ginvert.streamlit.app" target="_blank">
+    <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fginvert.streamlit.app&label=Pengunjung&countColor=%231f77b4&style=flat" alt="Visitor Count">
 </a>
 """
 
-# unsafe_allow_html=True adalah kunci agar HTML bisa terbaca di UI Streamlit
 st.sidebar.markdown(badge_html, unsafe_allow_html=True)
+# ---------------------------------
 # ---------------------------------
 
 # --- MAIN AREA ---
