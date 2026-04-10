@@ -188,6 +188,23 @@ smooth_sigma = st.sidebar.slider("Horizontal Smoothness", 0.0, 5.0, 2.0, 0.1, he
 max_dev = st.sidebar.slider("Max Density Deviation (+/- g/cc)", 0.05, 0.50, 0.20, 0.05, help="Batas maksimal algoritma boleh mengubah densitas awal.")
 max_iter = st.sidebar.number_input("Max Iterasi", value=15)
 
+# --- SUNTIKAN FITUR PENGUNJUNG ---
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Statistik Aplikasi**")
+
+url_app = "https://ginvert.streamlit.app/" 
+
+# Menggunakan format HTML murni agar Streamlit dipaksa merender gambar
+badge_html = f"""
+<a href="{url_app}" target="_blank">
+    <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url={url_app}&count_bg=%231f77b4&title_bg=%23555555&title=Pengunjung&edge_flat=false" alt="Visitor Count">
+</a>
+"""
+
+# unsafe_allow_html=True adalah kunci agar HTML bisa terbaca di UI Streamlit
+st.sidebar.markdown(badge_html, unsafe_allow_html=True)
+# ---------------------------------
+
 # --- MAIN AREA ---
 st.header("Step 1: Upload Data & Initial 1D Model")
 uploaded_file = st.file_uploader("Upload File (CSV/TXT: X, Y, Elev, Anomali mGal)", type=['csv', 'txt'])
@@ -235,16 +252,7 @@ if uploaded_file is not None:
             st.session_state['g_calc'] = g_calc
             st.session_state.inversion_done = True # Buka kunci pintu untuk Step 3-6
             # -------------------------------------------------------------
-    # --- SUNTIKAN FITUR PENGUNJUNG ---
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("**Statistik Aplikasi**")
-    url_app = "https://3dinvertg-psg.streamlit.app/" 
-
-    # Mengambil gambar badge dinamis (otomatis bertambah setiap halaman di-refresh)
-    badge_url = f"https://hits.seeyoufarm.com/api/count/incr/badge.svg?url={url_app}&count_bg=%231f77b4&title_bg=%23555555&title=Pengunjung&edge_flat=false"
-
-    # Menampilkan badge di sidebar
-    st.sidebar.markdown(f"[![Visitor Count]({badge_url})]({url_app})")
+        
 # ==========================================
 # VISUALISASI QC & SEMUA MODUL EXPORT
 # ==========================================
