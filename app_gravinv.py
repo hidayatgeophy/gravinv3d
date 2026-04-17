@@ -169,6 +169,7 @@ def gravity_inversion_3d(XI, YI, g_obs, dx, dy, z_bounds, nx, ny, nz, rho_1d_mod
 # ==========================================
 st.set_page_config(page_title="G-Invert Pro", layout="wide")
 st.title("G-Invert Pro: Interactive 3D Gravity Inversion")
+st.markdown("*Dibuat oleh Hidayat untuk kemajuan geofisika Indonesia 🇮🇩*")
 
 if 'inversion_done' not in st.session_state: st.session_state.inversion_done = False
 
