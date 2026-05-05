@@ -236,23 +236,7 @@ if uploaded_file is not None:
             st.session_state['g_obs'] = g_grid  # Disimpan agar bisa diplot di QC
             st.session_state['g_calc'] = g_calc
             st.session_state.inversion_done = True # Buka kunci pintu untuk Step 3-6
-            # -------------------------------------------------------------
-        # ==========================================
-        # 🎉 EFEK SELEBRASI & MUSIK DISCO 🎉
-        # ==========================================
-        # 1. Animasi balon terbang dari bawah layar
-        st.balloons() 
-        # (Alternatif animasi salju: st.snow() )
-
-        # 2. Efek Musik Autoplay
-        try:
-            # Pastikan file mp3 sudah ditaruh di folder yang sama dengan GinvertproV2.py
-            st.audio("give_it_up.mp3", format="audio/mp3", autoplay=True)
-            st.success("🎵 Saya tau kalian pusing, ayo musik dulu! 🕺")
-        except FileNotFoundError:
-            st.warning("⚠️ Inversi Selesai, tapi file 'give_it_up.mp3' belum ada di folder Bapak.")
-        # ==========================================
-# ==========================================
+        
 # VISUALISASI QC & SEMUA MODUL EXPORT
 # ==========================================
 # --- PERBAIKAN 2: BUNGKUS SEMUA MODUL KE DALAM SATU RUMAH UTAMA ---
