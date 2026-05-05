@@ -246,7 +246,7 @@ if uploaded_file is not None:
         nama_file_lagu = "give_it_up.mp3"
         if os.path.exists(nama_file_lagu):
             st.audio(nama_file_lagu, format="audio/mp3", start_time=32, end_time=39, autoplay=True)
-            st.success("🎵 Inversi Selesai!🕺")
+            st.success("🎵 Saya tau kalian pusing, ayo musik dulu!!🕺")
         else:
             st.warning(f"⚠️ Inversi berhasil! (Lagu selebrasi tidak diputar karena file '{nama_file_lagu}' belum di-upload ke GitHub).")
         # ==========================================
