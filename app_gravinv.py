@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 from matplotlib.gridspec import GridSpec
 from scipy.interpolate import griddata
 from scipy.signal import fftconvolve
@@ -239,16 +240,15 @@ if uploaded_file is not None:
         # ==========================================
         # 🎉 EFEK SELEBRASI & MUSIK DISCO 🎉
         # ==========================================
-        # 1. Animasi balon terbang dari bawah layar
         st.balloons() 
 
-        # 2. Efek Musik Autoplay (Hanya main detik ke-10 sampai ke-15)
-        try:
-            # Tambahkan start_time dan end_time di sini
-            st.audio("give_it_up.mp3", format="audio/mp3", start_time=32, end_time=39, autoplay=True)
+        # Cara baru yang 100% Anti-Crash
+        nama_file_lagu = "give_it_up.mp3"
+        if os.path.exists(nama_file_lagu):
+            st.audio(nama_file_lagu, format="audio/mp3", start_time=10, end_time=15, autoplay=True)
             st.success("🎵 Inversi Selesai!🕺")
-        except FileNotFoundError:
-            st.warning("⚠️ Inversi Selesai, tapi file 'give_it_up.mp3' belum ada")
+        else:
+            st.warning(f"⚠️ Inversi berhasil! (Lagu selebrasi tidak diputar karena file '{nama_file_lagu}' belum di-upload ke GitHub).")
         # ==========================================
 # ==========================================
 # VISUALISASI QC & SEMUA MODUL EXPORT
