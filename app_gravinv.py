@@ -248,7 +248,7 @@ if uploaded_file is not None:
             st.audio("give_it_up.mp3", format="audio/mp3", start_time=10, end_time=15, autoplay=True)
             st.success("🎵 Inversi Selesai! Saatnya berjoget! 🕺")
         except FileNotFoundError:
-            st.warning("⚠️ Inversi Selesai, tapi file 'give_it_up.mp3' belum ada di folder Bapak.")
+            st.warning("⚠️ Inversi Selesai, tapi file 'give_it_up.mp3' belum ada")
         # ==========================================
 # ==========================================
 # VISUALISASI QC & SEMUA MODUL EXPORT
