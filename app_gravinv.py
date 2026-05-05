@@ -245,8 +245,8 @@ if uploaded_file is not None:
         # 2. Efek Musik Autoplay (Hanya main detik ke-10 sampai ke-15)
         try:
             # Tambahkan start_time dan end_time di sini
-            st.audio("give_it_up.mp3", format="audio/mp3", start_time=10, end_time=15, autoplay=True)
-            st.success("🎵 Inversi Selesai! Saatnya berjoget! 🕺")
+            st.audio("give_it_up.mp3", format="audio/mp3", start_time=32, end_time=39, autoplay=True)
+            st.success("🎵 Inversi Selesai!🕺")
         except FileNotFoundError:
             st.warning("⚠️ Inversi Selesai, tapi file 'give_it_up.mp3' belum ada")
         # ==========================================
