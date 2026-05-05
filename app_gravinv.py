@@ -240,15 +240,17 @@ if uploaded_file is not None:
         # ==========================================
         # 🎉 EFEK SELEBRASI & MUSIK DISCO 🎉
         # ==========================================
+        # 1. Animasi balon terbang dari bawah layar
         st.balloons() 
+        # (Alternatif animasi salju: st.snow() )
 
-        # Cara baru yang 100% Anti-Crash
-        nama_file_lagu = "give_it_up.mp3"
-        if os.path.exists(nama_file_lagu):
-            st.audio(nama_file_lagu, format="audio/mp3", autoplay=True)
-            st.success("🎵 Saya tau kalian pusing, ayo musik dulu!!🕺")
-        else:
-            st.warning(f"⚠️ Inversi berhasil! (Lagu selebrasi tidak diputar karena file '{nama_file_lagu}' belum di-upload ke GitHub).")
+        # 2. Efek Musik Autoplay
+        try:
+            # Pastikan file mp3 sudah ditaruh di folder yang sama dengan GinvertproV2.py
+            st.audio("give_it_up.mp3", format="audio/mp3", autoplay=True)
+            st.success("🎵 Saya tau kalian pusing, ayo musik dulu! 🕺")
+        except FileNotFoundError:
+            st.warning("⚠️ Inversi Selesai, tapi file 'give_it_up.mp3' belum ada di folder Bapak.")
         # ==========================================
 # ==========================================
 # VISUALISASI QC & SEMUA MODUL EXPORT
