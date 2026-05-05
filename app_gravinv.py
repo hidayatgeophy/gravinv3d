@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as pltst.audio(nama_file_lagu, format="audio/mp3", start_time=32, end_time=39, autoplay=True)
+import matplotlib.pyplot as plt
 import os
 from matplotlib.gridspec import GridSpec
 from scipy.interpolate import griddata
