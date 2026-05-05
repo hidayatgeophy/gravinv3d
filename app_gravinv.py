@@ -236,7 +236,20 @@ if uploaded_file is not None:
             st.session_state['g_calc'] = g_calc
             st.session_state.inversion_done = True # Buka kunci pintu untuk Step 3-6
             # -------------------------------------------------------------
+        # ==========================================
+        # 🎉 EFEK SELEBRASI & MUSIK DISCO 🎉
+        # ==========================================
+        # 1. Animasi balon terbang dari bawah layar
+        st.balloons() 
 
+        # 2. Efek Musik Autoplay (Hanya main detik ke-10 sampai ke-15)
+        try:
+            # Tambahkan start_time dan end_time di sini
+            st.audio("give_it_up.mp3", format="audio/mp3", start_time=10, end_time=15, autoplay=True)
+            st.success("🎵 Inversi Selesai! Saatnya berjoget! 🕺")
+        except FileNotFoundError:
+            st.warning("⚠️ Inversi Selesai, tapi file 'give_it_up.mp3' belum ada di folder Bapak.")
+        # ==========================================
 # ==========================================
 # VISUALISASI QC & SEMUA MODUL EXPORT
 # ==========================================
