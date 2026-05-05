@@ -236,7 +236,19 @@ if uploaded_file is not None:
             st.session_state['g_obs'] = g_grid  # Disimpan agar bisa diplot di QC
             st.session_state['g_calc'] = g_calc
             st.session_state.inversion_done = True # Buka kunci pintu untuk Step 3-6
-        
+        # ==========================================
+        # 🎉 EFEK SELEBRASI & MUSIK DISCO 🎉
+        # ==========================================
+        st.balloons() 
+
+        # Cara baru yang 100% Anti-Crash
+        nama_file_lagu = "give_it_up.mp3"
+        if os.path.exists(nama_file_lagu):
+            st.audio(nama_file_lagu, format="audio/mp3", start_time=10, end_time=15, autoplay=True)
+            st.success("🎵 Saya tau kalian pusing, ayo musik dulu!! 🕺")
+        else:
+            st.warning(f"⚠️ Inversi berhasil! (Lagu selebrasi tidak diputar karena file '{nama_file_lagu}' belum di-upload ke GitHub).")
+        # ==========================================
 # VISUALISASI QC & SEMUA MODUL EXPORT
 # ==========================================
 # --- PERBAIKAN 2: BUNGKUS SEMUA MODUL KE DALAM SATU RUMAH UTAMA ---
